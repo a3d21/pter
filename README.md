@@ -8,7 +8,7 @@ Go Property Tester base on testing/quick.
 $ go get github.com/a3d21/pter
 ```
 
-example"
+## example
 ```go
 func TestAddSpec(t *testing.T) {
 	add := func(a, b int) int {

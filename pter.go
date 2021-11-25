@@ -9,6 +9,10 @@ import (
 	fuzz "github.com/google/gofuzz"
 )
 
+var (
+	defaultFuzzer = fuzz.New()
+)
+
 // FuzzArgs fuzz non-nil args generator for testing/quick
 func FuzzArgs(fuzzer *fuzz.Fuzzer, assertion interface{}) func(args []reflect.Value, rand *rand.Rand) {
 	ft := reflect.TypeOf(assertion)
@@ -32,14 +36,13 @@ func newValue(fuzzer *fuzz.Fuzzer, typ reflect.Type) reflect.Value {
 	return v.Elem()
 }
 
-func QuickCheck(t *testing.T, assertion interface{}, maxCount int) {
-	f := fuzz.New()
-	QuickCheckWithFuzzer(t, f, assertion, maxCount)
+func QuickCheck(t *testing.T, assertion interface{}, count int) {
+	QuickCheckWithFuzzer(t, defaultFuzzer, assertion, count)
 }
 
-func QuickCheckWithFuzzer(t *testing.T, fuzzer *fuzz.Fuzzer, assertion interface{}, maxCount int) {
+func QuickCheckWithFuzzer(t *testing.T, fuzzer *fuzz.Fuzzer, assertion interface{}, count int) {
 	if err := quick.Check(assertion, &quick.Config{
-		MaxCount: maxCount,
+		MaxCount: count,
 		Values:   FuzzArgs(fuzzer, assertion),
 	}); err != nil {
 		t.Error(err)
