@@ -2,6 +2,7 @@ package pter
 
 import (
 	"encoding/json"
+	"math/rand"
 	"reflect"
 	"testing"
 
@@ -17,7 +18,9 @@ func TestAddSpec(t *testing.T) {
 		return add(a, b) == a+b
 	}
 
-	QuickCheck(t, assertion, nil)
+	QuickCheck(t, assertion, &Config{
+		MaxCount: 10000,
+	})
 }
 
 type AType struct {
@@ -28,7 +31,7 @@ type AType struct {
 	Slice  []string
 }
 
-func TestJsonSpec(t *testing.T) {
+func TestJsonSpecWithCustomFuzzer(t *testing.T) {
 	assertion := func(a *AType) bool {
 		bs, err := json.Marshal(a)
 		if err != nil {
@@ -48,5 +51,22 @@ func TestJsonSpec(t *testing.T) {
 	QuickCheck(t, assertion, &Config{
 		MaxCount: 2000,
 		Fuzzer:   f,
+	})
+}
+
+func TestMultiplySpecWithCustomArgsFn(t *testing.T) {
+	multiply := func(a, b int) int {
+		return a * b
+	}
+
+	assertion := func(a, b int) bool {
+		return multiply(a, b) == a*b
+	}
+
+	QuickCheck(t, assertion, &Config{
+		MaxCount: 10000,
+		Args: func() []interface{} {
+			return []interface{}{rand.Int(), rand.Int()}
+		},
 	})
 }

@@ -54,6 +54,9 @@ func QuickCheck(t *testing.T, assertion interface{}, c *Config) {
 		cc := *defaultConfig
 		c = &cc
 	}
+	if c.MaxCount == 0 {
+		c.MaxCount = defaultConfig.MaxCount
+	}
 	if c.Args == nil {
 		fuzzer := defaultFuzzer
 		if c.Fuzzer != nil {
