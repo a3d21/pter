@@ -11,39 +11,60 @@ import (
 
 var (
 	defaultFuzzer = fuzz.New()
+	defaultConfig = &Config{MaxCount: 10000}
 )
 
-// FuzzArgs fuzz non-nil args generator for testing/quick
-func FuzzArgs(fuzzer *fuzz.Fuzzer, assertion interface{}) func(args []reflect.Value, rand *rand.Rand) {
-	ft := reflect.TypeOf(assertion)
-	return func(args []reflect.Value, rand *rand.Rand) {
-		for i := 0; i < ft.NumIn(); i++ {
-			args[i] = newValue(fuzzer, ft.In(i))
+// ArgsFn generate test args
+type ArgsFn func() []interface{}
+
+// ToQuickValueFn transform to testing/quick value fn
+func (f ArgsFn) ToQuickValueFn() func(values []reflect.Value, rand *rand.Rand) {
+	return func(values []reflect.Value, rand *rand.Rand) {
+		args := f()
+		for i, a := range args {
+			values[i] = reflect.ValueOf(a)
 		}
 	}
 }
 
-func newValue(fuzzer *fuzz.Fuzzer, typ reflect.Type) reflect.Value {
-	if typ.Kind() == reflect.Ptr {
-		etyp := typ.Elem()
-		v := reflect.New(etyp)
-		fuzzer.Fuzz(v.Interface())
-		return v
+// FuzzArgs fuzz non-nil args generator for testing/quick
+func FuzzArgs(fuzzer *fuzz.Fuzzer, assertion interface{}) ArgsFn {
+	ft := reflect.TypeOf(assertion)
+	return func() []interface{} {
+		alen := ft.NumIn()
+		args := make([]interface{}, alen, alen)
+		for i := 0; i < alen; i++ {
+			args[i] = newValue(fuzzer, ft.In(i)).Interface()
+		}
+		return args
+	}
+}
+
+type Config struct {
+	// MaxCount sets the maximum test count
+	MaxCount int
+	// Args generator
+	Args ArgsFn
+	// Fuzzer generate args, use `defaultFuzzer` when Fuzzer==nil
+	Fuzzer *fuzz.Fuzzer
+}
+
+func QuickCheck(t *testing.T, assertion interface{}, c *Config) {
+	if c == nil {
+		cc := *defaultConfig
+		c = &cc
+	}
+	if c.Args == nil {
+		fuzzer := defaultFuzzer
+		if c.Fuzzer != nil {
+			fuzzer = c.Fuzzer
+		}
+		c.Args = FuzzArgs(fuzzer, assertion)
 	}
 
-	v := reflect.New(typ)
-	fuzzer.Fuzz(v.Interface())
-	return v.Elem()
-}
-
-func QuickCheck(t *testing.T, assertion interface{}, count int) {
-	QuickCheckWithFuzzer(t, defaultFuzzer, assertion, count)
-}
-
-func QuickCheckWithFuzzer(t *testing.T, fuzzer *fuzz.Fuzzer, assertion interface{}, count int) {
 	if err := quick.Check(assertion, &quick.Config{
-		MaxCount: count,
-		Values:   FuzzArgs(fuzzer, assertion),
+		MaxCount: c.MaxCount,
+		Values:   c.Args.ToQuickValueFn(),
 	}); err != nil {
 		t.Error(err)
 	}

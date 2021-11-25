@@ -19,7 +19,6 @@ func TestAddSpec(t *testing.T) {
 		return add(a, b) == a+b
 	}
 
-	QuickCheck(t, assertion, 2000)
+	QuickCheck(t, assertion, nil)
 }
-
 ```

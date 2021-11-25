@@ -17,7 +17,7 @@ func TestAddSpec(t *testing.T) {
 		return add(a, b) == a+b
 	}
 
-	QuickCheck(t, assertion, 2000)
+	QuickCheck(t, assertion, nil)
 }
 
 type AType struct {
@@ -45,5 +45,8 @@ func TestJsonSpec(t *testing.T) {
 	}
 
 	f := fuzz.New().NilChance(0)
-	QuickCheckWithFuzzer(t, f, assertion, 2000)
+	QuickCheck(t, assertion, &Config{
+		MaxCount: 2000,
+		Fuzzer:   f,
+	})
 }
