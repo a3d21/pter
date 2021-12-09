@@ -69,6 +69,7 @@ func QuickCheck(t *testing.T, assertion interface{}, c *Config) {
 		MaxCount: c.MaxCount,
 		Values:   c.Args.ToQuickValueFn(),
 	}); err != nil {
+		t.Helper()
 		t.Error(err)
 	}
 }
